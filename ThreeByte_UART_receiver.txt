@@ -1,0 +1,161 @@
+//////////////////////////////////////////////////////////////////////////////////
+// Company: SDSU
+// Engineer: Alvaro Valera and Richard Proppe
+// 
+// Create Date:    9:06:46 11/21/2017 
+// Design Name: 
+// Module Name:    Three Byte UART Receiver 
+// Project Name: 
+// Target Devices: 
+// Tool versions: 
+// Description: 
+//
+// Dependencies: 
+//
+// Revision: 
+// Revision 0.01 - File Created
+// Additional Comments: 
+//
+//////////////////////////////////////////////////////////////////////////////////
+module uart_rx
+
+   #(parameter baudRate = 3200) //paramterized to easily change baud rate
+										  // 100 MHz / 31250 = 3200
+	(
+		input iClock,
+		input rxSerialInput,
+//		output reg [7:0] led,
+		output reg [7:0] o_Byte0,o_Byte1,o_Byte2,
+		output reg [2:0] testBit
+   );
+	 
+	//Declared FSM states as local parameters
+	localparam idleState            = 3'b000; 
+    localparam checkStartBitState   = 3'b001;
+ 	localparam receiveDataBitsState = 3'b010;
+	localparam receiveStopBitState  = 3'b011;
+
+	reg [2:0]  state        = 3'b000;  //holds FSM state
+	reg [2:0]  bitCount     = 3'b000;  //counts received bits
+	reg [2:0]  regCount     = 3'b000;
+	reg [13:0] clockCounter = 0;
+	reg [7:0] tmpreg        = 0;
+	reg [7:0] o_RX_statusByte [2:0];
+//	reg [7:0] tmp_Byte0,tmp_Byte1,tmp_Byte2;
+	     
+	
+//	initial begin
+//		led = 8'b01010101;
+//	end
+	
+	always @ (posedge iClock) begin
+
+		case(state)
+			
+			//waiting for start bit
+			idleState : begin
+			//set the test bit to bit number 8 out of 8 total 
+			testBit<=3'b111;
+//			tmp_Byte0 <= 8'b11111111;
+//            tmp_Byte1 <= 8'b11111111;
+//            tmp_Byte2 <= 8'b11111111;
+				clockCounter <= 0;
+				//if the rx line is high, 5V, stay in idle state
+				if(rxSerialInput) state <= idleState;
+				//if the rx line goes low, 0V, change to next state
+				else              state <= checkStartBitState;
+			end //idleState			
+			
+			//confirming actual receipt of start bit
+			checkStartBitState : begin
+				//check middle of start bit
+				if(clockCounter < (baudRate/2) - 1 ) clockCounter <= clockCounter + 1;
+				else begin
+					clockCounter <= 0;
+					//if rx line is high, not in the start bit return to idle
+					if(rxSerialInput) state <= idleState;
+					//if rx line is low, the start bit is confirmed
+					else begin
+						//reset bit counter to 0 out of 7
+						bitCount <= 3'b000;
+						//change to next state
+						state    <= receiveDataBitsState;
+//						led = 8'b00000000; //reset led
+					end
+				end
+			end //checkStartBitState
+			
+			//start receiving data bits
+			receiveDataBitsState : begin
+				//begin counting up to 3200, to find the middle of the next bit
+				if(clockCounter < baudRate - 1) clockCounter <= clockCounter + 1;
+				else begin
+					//begin writing data to the temporary storage register, o_RX_statusByte 
+					clockCounter <=0;
+//					led[bitCount] <= rxSerialInput;
+					o_RX_statusByte[regCount][bitCount] <= rxSerialInput;
+					testBit[regCount] <= rxSerialInput;
+					if(bitCount < 7)begin
+					   bitCount <= bitCount + 1;
+					end   
+					else begin 
+					state <= receiveStopBitState;
+					if (regCount == 2) begin
+                                        regCount <= 0;
+                                    end
+                                    else begin
+                                       regCount <= regCount+1;
+                                       
+                                    end
+                    end
+				end
+			end //receiveDataBitsState
+			
+			//confirm stop bit
+			
+			
+			//this was part was changed for some reason??? Changed back on 12082017
+			
+			receiveStopBitState : begin
+	            case (regCount)
+                    0: begin
+                          o_Byte2 <= o_RX_statusByte[2];
+                       end
+                    1: begin
+                          o_Byte0 <= o_RX_statusByte[0];
+                       end
+                    2: begin
+                          o_Byte1 <= o_RX_statusByte[1];
+                       end
+                    default: begin
+                                o_Byte0 <= o_RX_statusByte[0];
+                             end
+                 endcase
+//	            if (tmp_Byte2 == 8'b00000000 || (tmp_Byte0 == 8'b11111111&&tmp_Byte1 == 8'b11111111&&tmp_Byte2 == 8'b11111111)) begin
+//	               {o_Byte0,o_Byte1,o_Byte2} <= {o_Byte0,o_Byte1,o_Byte2};
+//	            end
+//	            else begin
+//	               {o_Byte0,o_Byte1,o_Byte2} <= {tmp_Byte0,tmp_Byte1,tmp_Byte2};
+//	            end
+//o_Byte2 <= tmp_Byte2;
+//o_Byte0 <= tmp_Byte0;
+//o_Byte1 <= tmp_Byte1;
+            
+				bitCount <= 0;
+				if(clockCounter < baudRate - 1) clockCounter <= clockCounter + 1;
+				else begin
+					//go back to idle if stop bit received, rx line is high 5V
+					if(rxSerialInput) state <= idleState; 
+					else begin //if no stop bit, then transmission may have been misidentified, so dump data
+//						led <= 8'b00000000;
+						state <= idleState;
+						
+					end
+				end
+			end //receiveStopBitState
+			
+			default : state <= idleState;
+		endcase
+	end
+	
+endmodule 

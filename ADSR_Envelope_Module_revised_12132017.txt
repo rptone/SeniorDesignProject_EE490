@@ -1,0 +1,264 @@
+//////////////////////////////////////////////////////////////////////////////////
+// Company: Compute_seniorDesignProject_ee490
+// Engineer: Richard Proppe, Gaston Regazzo, and Alvaro Valera
+// 
+// Create Date: 9:06:46 11/21/2017 
+// Design Name: final draft, 12/13/2017
+// Module Name: ADSR Envelope Module
+// Project Name: MIDI Sound Module Piano Synthesizer 
+// Target Devices: NEXYS4 DDR
+// Tool versions: 
+// Description: 
+//
+// Dependencies: 
+//
+// Revision: 2.01 - File Modified 
+// Revision 0.01 - File Created
+// Additional Comments: This module is incomplete as a better clock divider or 
+//                      counter scheme is still needed. This design originally used 
+//                      decimal integers to scale the signal amplitudes and the
+//                      system clock. However this added distortion to the signal.
+//                      This version right shifts the incoming data in order to 
+//                      divide and reduce the signal am,plitude.    
+//
+//////////////////////////////////////////////////////////////////////////////////
+
+//declare STATE MACHINE variables
+`define IDLE 3'd0
+`define ATTACK 3'd1
+`define DECAY 3'd2
+`define HOLD 3'd3
+`define FADE 3'd4
+
+//declare counter variables, M100 = 100Mhz = 1 second
+`define M400 30'd400000000// count up to 400 Mega clock cycles from zero, takes 4 seconds
+`define M100 30'd100000000// count up to 100 Mega clock cycles from zero, takes 1 seconds
+//used to right shift 16bits in two seconds
+`define M12 30'd12500000// count up to 12.5 Mega clock cycles from zero, takes 1/8 seconds
+
+module envelope(input SYSTEM_CLOCK,
+					 input [7:0] message2, //dataByte2 
+					 input [15:0] LUT_in, //input from LUT(DAC_out)
+					 output reg [15:0] result);
+					 
+   reg [2:0] current_state = `IDLE;
+   reg [2:0] next_state;
+   
+   //declare and initialize state time counters
+   reg [30:0] a_count = 30'd0;
+   reg [30:0] d_count = 30'd0;
+   reg [30:0] t_count = 30'd0;
+   reg [30:0] f_count = 30'd0;
+   
+   //added 12-12-2017
+   //declare and initialize state loop variables
+   reg[4:0] a = 16;
+   reg[4:0] d = 0;
+   reg[4:0] h = 8;
+   reg[4:0] f = 8;
+   
+   always @(posedge SYSTEM_CLOCK) begin
+     current_state = next_state;
+   end
+   
+   always @* begin
+      case (current_state)
+	     `IDLE: begin
+				 //reset all counters and loop variables
+				 a_count = 30'd0;
+				 d_count = 30'd0;
+				 t_count = 30'd0;
+				 f_count = 30'd0;
+				 a  = 16;
+				 d  = 0;
+				 h  = 8;
+				 f  = 8;
+				 
+				    //if a key was presses change to next state
+		            if (message2 != 0) begin
+				     next_state = `ATTACK;
+				    end
+					
+				   //remain in idle state
+				    else begin
+				      next_state = `IDLE;
+				    end
+				end
+	     `ATTACK: begin
+						//no key pressed, off
+					    if (message2 == 0) begin
+					     next_state = `IDLE;
+					    end
+					 
+					    //key is pressed, on
+					    else begin
+							//count up to 1/8 second, 12.5M clock cycles
+					        if (a_count != `M12) begin
+						     a_count = a_count +  1;
+						    end
+						
+						    else if (a_count == `M12) begin
+								//increase signal amplitide by shifting bits
+							    if (a != 0) begin  
+							     //reduce the number of bits being right shifted by one
+						         a <= a - 1;
+								 //reset counter to zero, go to top of state
+						         a_count <= 0;
+						        end
+						   
+						        else if (a == 0) begin 
+							     //change to next state
+						         next_state = `DECAY;
+						        end
+							   
+						        else
+									//return to idle state
+						            begin
+						             next_state = `IDLE;
+						        end
+						    end
+					    end
+				    end
+		 `DECAY: begin
+		                //no key pressed, off
+					    if (message2 == 0) begin
+					     next_state = `IDLE;
+					    end
+					 
+					    //key is pressed, on
+					    else begin
+							//count up to 1/8 second, 12.5M clock cycles
+					        if (d_count != `M12) begin
+						     d_count = d_count +  1;
+						    end
+						
+						    else if (d_count == `M12) begin
+								//decrease signal amplitide by shifting bits
+							    if (d != 8) begin  
+							     //increase the number of bits being right shifted by one
+						         d <= d + 1;
+								 //reset counter to zero, go to top of state
+						         d_count <= 0;
+						        end
+						   
+						        else if (d == 8) begin 
+							     //change to next state
+						         next_state = `HOLD;
+						        end
+							   
+						        else
+									//return to idle state
+						            begin
+						             next_state = `IDLE;
+						        end
+						    end
+					    end
+				    end
+		 `HOLD: begin
+				//no key is pressed, off
+				if (message2 == 0) begin
+					    next_state = `IDLE;
+				end
+					 
+					//key is pressed, on
+					else begin
+					    //hold note for 400M clock cycles, 4 seconds
+					    if (t_count != `M400) begin
+						   t_count = t_count + 1;
+						   next_state = `HOLD;
+						end
+						
+						else begin
+							//change to next state
+						   if (t_count == `M400) begin
+						      next_state = `FADE;
+						   end
+						end
+					end
+				end
+		 `FADE: begin
+						//no key pressed, off
+					    if (message2 == 0) begin
+					     next_state = `IDLE;
+					    end
+					 
+					    //key is pressed, on
+					    else begin
+							//count up to 1/8 second, 12.5M clock cycles
+					        if (f_count != `M12) begin
+						     f_count = f_count +  1;
+						    end
+						
+						    else if (f_count == `M12) begin
+								//decrease signal amplitide by shifting bits
+							    if (f != 16) begin  
+							     //increase the number of bits being right shifted by one
+						         f <= f + 1;
+								 //reset counter to zero, go to top of state
+						         f_count <= 0;
+						        end
+						   
+						        else if (f == 0) begin 
+							     //change to idle state, end of ADSR loop
+						         next_state = `IDLE;
+						        end
+							   
+						        else
+									//return to idle state
+						            begin
+						             next_state = `IDLE;
+						        end
+						    end
+					    end
+				    end
+	     default: begin
+				     //reset all counters and loop variables
+				     a_count = 30'd0;
+				     d_count = 30'd0;
+				     t_count = 30'd0;
+				     f_count = 30'd0;
+				     a  = 16;
+				     d  = 0;
+				     h  = 8;
+				     f  = 8;
+					
+				        //if key is pressed go to attack state
+		                if (message2 != 0) begin
+				         next_state = `ATTACK;
+				        end
+						
+				        //return to idle state
+				        else begin
+				         next_state = `IDLE;
+				        end
+				    end
+	    endcase
+    end
+   
+   
+   
+   
+   always @(current_state) begin
+      case (current_state)
+	     `IDLE: begin
+		           result = 0;
+				end
+	     `ATTACK: begin
+		             result = LUT_in >> a;
+				  end
+		 `DECAY: begin
+		           result = LUT_in >> d;
+				 end
+		 `HOLD: begin
+		           result = LUT_in >> h;
+				end
+		 `FADE: begin
+		           result = LUT_in >> f;
+				end
+	     default: begin
+		             result = 0;
+				  end
+	  endcase
+   end
+   
+endmodule

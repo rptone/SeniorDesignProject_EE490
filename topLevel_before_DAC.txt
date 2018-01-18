@@ -1,0 +1,128 @@
+//`timescale 10ms/1ns
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date:    16:48:11 10/09/2017 
+// Design Name: 
+// Module Name:    test 
+// Project Name: 
+// Target Devices: 
+// Tool versions: 
+// Description: 
+//
+// Dependencies: 
+//
+// Revision: 
+// Revision 0.01 - File Created
+// Additional Comments: 
+//
+//////////////////////////////////////////////////////////////////////////////////
+module test(input  SYSTEM_CLOCK,
+				input   IN,	// UART Receive (1N4)
+				input RST,
+				input wire [3:0] SW,
+				output reg [10:0]status,
+				output [3:0]out,
+				output DAC); //input for the dac
+                     
+									  
+				
+//wire [7:0] temp0; //first output register
+//wire [7:0] temp1; //second output register
+//wire [7:0] temp2; //third output register 
+wire [15:0] pa1,pa2,pa3,pa4,pa5,pa6,pa7,pa8;
+//wire [15:0] pa1,pa2,pa4,pa8;
+wire [15:0] temp7;
+wire [15:0] temp8;
+wire clk2;
+wire clk3;
+wire [10:0] led;
+wire [10:0] o_lut;
+wire [10:0] o_env;
+		
+wire [7:0] out1,out2,out0;
+
+wire nRST = ~RST;
+
+///////////// Testing Mux ////////////
+
+always @(posedge SYSTEM_CLOCK) begin
+case (SW)
+   0: begin
+         status = out0;
+      end
+   1: begin
+         status = out1;
+      end
+   2: begin
+         status = out2;
+      end
+   3: begin
+         status = led;
+      end
+   4: begin
+         status = pa1;
+      end
+   5: begin
+         status = o_lut;
+      end  
+   6: begin
+         status = temp8;
+      end     
+   default: begin
+               status = ~0;
+            end
+endcase
+end
+//				assign out[3] = CLK;
+
+uart_rx #(.baudRate(3200)) 
+    UART(.iClock(SYSTEM_CLOCK),.rxSerialInput(IN),.o_Byte0(out0),.o_Byte1(out1),.o_Byte2(out2),.testBit(out));
+//    UART(.iClock(clk3),.rxSerialInput(IN),.o_Byte0(out0),.o_Byte1(out1),.o_Byte2(out2),.testBit(out));
+
+
+//Phase_Accumulator PHACC (.SYSTEM_CLOCK(clk2),.message1(out1),.message2(out2),.led(led),.pa_out1(pa1),.pa_out2(pa2),.pa_out3(pa3),.pa_out4(pa4),.pa_out5(pa5),.pa_out6(pa6),.pa_out7(pa7),.pa_out8(pa8));
+//Phase_Accumulator PHACC (.SYSTEM_CLOCK(clk190),.message1(out1),.message2(out2),.led(led),.pa_out1(pa1),.pa_out2(pa2),.pa_out4(pa4),.pa_out8(pa8));
+Phase_Accumulator PHACC (.SYSTEM_CLOCK(clk2),.message1(out1),.message2(out2),.led(led),.pa_out1(pa1),.pa_out2(pa2),.pa_out3(pa3),.pa_out4(pa4),.pa_out5(pa5),.pa_out6(pa6),.pa_out7(pa7),.pa_out8(pa8));
+clkdiv #(.FBIT(10)) CDIV (.mclk(SYSTEM_CLOCK), .clr(RST), .clk48(clk2),.clk190(clk3));
+
+LUT UTT_02(.SYSTEM_CLOCK(SYSTEM_CLOCK),.addr1(pa1),.addr2(pa2),.addr3(pa3),.addr4(pa4),.addr5(pa5),.addr6(pa6),.addr7(pa7),.addr8(pa8),.DAC_out(temp7),.o_lut(o_lut));
+//LUT UTT_02(.SYSTEM_CLOCK(clk2),.addr1(pa1),.addr2(pa2),.addr3(pa3),.addr4(pa4),.addr5(pa5),.addr6(pa6),.addr7(pa7),.addr8(pa8),.DAC_out(temp7),.o_lut(o_lut));
+//LUT UTT_02(.SYSTEM_CLOCK(clk2),.addr1(pa1),.addr2(pa2),.addr4(pa4),.addr8(pa8),.DAC_out(temp7),.o_lut(o_lut));
+
+
+envelope UTT_03(.SYSTEM_CLOCK(SYSTEM_CLOCK),.message2(out2),.LUT_in(temp7),.result(temp8));
+//envelope UTT_03(.SYSTEM_CLOCK(clk2),.message2(out2),.LUT_in(temp7),.result(temp8));
+
+
+dac_dsm2_top UTT_04(.din(temp8),.dout(DAC),.clk(SYSTEM_CLOCK),.n_rst(nRST));
+//dac_dsm2_top UTT_04(.din(temp8),.dout(DAC),.clk(clk2),.n_rst(nRST));
+
+
+
+
+
+endmodule 
+
+
+module clkdiv #(parameter FBIT=10)
+              (input wire mclk,
+               input wire clr,
+               output wire clk190,
+               output wire clk48);
+   reg [24:0] q;
+   
+   always @(posedge mclk or posedge clr) begin
+//      if (clr == 1 || q == 2083)
+      if (clr == 1)
+         q <= 0;
+      else
+         q<=q+1;
+   end
+   
+   assign clk48 = q[FBIT];
+   assign clk190=q[1];
+    
+   
+endmodule

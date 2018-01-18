@@ -1,0 +1,69 @@
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/*
+* channel_mux - Vaughn Ganem Haka
+* Usage: Automatically prioritize an active communication channel, between two
+*   competing channels.
+* Input:
+*   clk - The clock used. For saefty, it should be >= 2*channel_freq
+*     Assuming a shared channel frequency.
+*   in_0, in_1 - Input communication channels.
+* Output:
+*   out - Output value of the current active channel. Idles at `idle_level` if
+*     no active channel.
+* Parameters:
+*   clk_freq - The apparent clock frequency, used for determining the timeout.
+*   idle_timeout - An integer scalar, can represent seconds before a timeout.
+*   idle_level - The level which the channels idle. Assumes both channels have a shared `idle_level`
+*/
+module channel_mux #(parameter clk_freq=50000000, parameter idle_timeout=1, parameter idle_level=1) (
+  input in_0, in_1,
+  input clk,
+  output reg out
+);
+
+  reg active_channel_num = 1'bZ;
+  reg [31:0] timeout_counter = 0;
+  localparam ACTIVE = !idle_level;
+
+  always @(posedge clk) begin
+
+    if (active_channel_num == 1'bZ) begin // Assign channel, if unassigned
+      if (in_0 == ACTIVE) begin // implicitly prioritizes `in_0` activity over `in_1`
+        active_channel_num <= 0;
+        out <= in_0;
+      end else if (in_1 == ACTIVE) begin
+        active_channel_num <= 1;
+        out <= in_1;
+      end
+
+    end else if (active_channel_num) begin // Assign output, check if idle. Code is semi-redundant
+      out <= in_1;
+      if (in_1 == out) begin // if value has not changed
+        timeout_counter <= timeout_counter + 1; // inc timeout counter (towards timeout)
+      end else begin
+        timeout_counter <= 0; // reset timeout
+      end
+    end else begin // Same, for channel 0
+      out <= in_0;
+      if (in_0 == out) begin
+        timeout_counter <= timeout_counter + 1;
+      end else begin
+        timeout_counter <= 0;
+      end
+    end
+
+    if (timeout_counter >= (clk_freq * idle_timeout)) begin  // timeout current channel
+      timeout_counter <= 0;
+      active_channel_num = 1'bZ;
+      out <= idle_level; //idle while channel is inactive
+    end
+
+  end
+
+endmodule
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////

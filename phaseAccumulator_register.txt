@@ -1,0 +1,163 @@
+//////////////////////////////
+// Phase Accumulator Register Module
+// Programmers: Alvaro Alvera, Richard Proppe, Gaston Regazzo, Abel FLores, Isai Hernandez
+
+module Phase_Accumulator(input SYSTEM_CLOCK,
+//								 input [7:0] message0, //first output register
+								 input [7:0] message1, //second output register
+								 input [7:0] message2, //third output register
+								 output reg [10:0] led,
+								 output [15:0] pa_out1, //);
+                                 output [15:0] pa_out2,
+                                 output [15:0] pa_out3,
+                                 output [15:0] pa_out4,
+                                 output [15:0] pa_out5,
+                                 output [15:0] pa_out6,
+                                 output [15:0] pa_out7,
+                                 output [15:0] pa_out8);
+	
+wire [31:0]temp2 = 0;
+wire [31:0]temp3 = 0;
+wire [31:0]temp4 = 0;
+wire [31:0]temp5 = 0;
+wire [31:0]temp6 = 0;
+wire [31:0]temp7 = 0;
+wire [31:0]temp8 = 0;
+reg [23:0] pa_message;
+//	assign pa_out1 = pa_message [21:13];
+assign pa_out1 = pa_message [23:7];
+//    assign temp2 = 2*pa_out1;  
+//    assign pa_out2 = temp2[31:15]; 
+//    assign temp3 = 3*pa_out1;
+//    assign pa_out3 = temp3[31:15];
+//    assign temp4 = 4*pa_out1;
+//    assign pa_out4 = temp4[31:15]; 
+//    assign temp5 = 5*pa_out1;
+//    assign pa_out5 =  temp5[31:15];
+//    assign temp6 = 6*pa_out1;
+//    assign pa_out6 = temp6[31:15];  
+//    assign temp7 = 7*pa_out1;
+//    assign pa_out7 = temp7[31:15];    
+//    assign temp8 = 8*pa_out1;
+//    assign pa_out8 =  temp8[31:15];
+      //assign pa_out1 = pa_message;
+      assign temp2 = 2*pa_out1;  
+      assign pa_out2 = temp2; 
+      assign temp3 = 3*pa_out1;
+      assign pa_out3 = temp3;
+      assign temp4 = 4*pa_out1;
+      assign pa_out4 = temp4; 
+      assign temp5 = 5*pa_out1;
+      assign pa_out5 =  temp5;
+      assign temp6 = 6*pa_out1;
+      assign pa_out6 = temp6;  
+      assign temp7 = 7*pa_out1;
+      assign pa_out7 = temp7;    
+      assign temp8 = 8*pa_out1;
+      assign pa_out8 = temp8;	
+	
+	
+	initial begin
+	pa_message = 24'd0;
+	led = 11'b11001100111;
+	end
+				
+	always @(posedge SYSTEM_CLOCK) begin
+		if(message2) begin	
+            led = 11'b10101010101;		
+			case (message1)
+			   8'd9  : pa_message = pa_message + 14'd9612;   
+			   8'd10 : pa_message = pa_message + 14'd10184;  
+			   8'd11 : pa_message = pa_message + 14'd10789;  
+			   8'd12 : pa_message = pa_message + 14'd11431;  
+			   8'd13 : pa_message = pa_message + 14'd12110;  
+			   8'd14 : pa_message = pa_message + 14'd12830;  
+			   8'd15 : pa_message = pa_message + 14'd13593;  
+			   8'd16 : pa_message = pa_message + 14'd14402;  
+			   8'd17 : pa_message = pa_message + 14'd15258;  
+			   8'd18 : pa_message = pa_message + 14'd16165;  
+			   8'd19 : pa_message = pa_message + 15'd17127;  
+			   8'd20 : pa_message = pa_message + 15'd18145;  
+			   8'd21 : pa_message = pa_message + 15'd19224;  
+			   8'd22 : pa_message = pa_message + 15'd20367;  
+			   8'd23 : pa_message = pa_message + 15'd21578;  
+			   8'd24 : pa_message = pa_message + 15'd22861;  
+			   8'd25 : pa_message = pa_message + 15'd24221;  
+			   8'd26 : pa_message = pa_message + 15'd25661;  
+			   8'd27 : pa_message = pa_message + 15'd27187;  
+			   8'd28 : pa_message = pa_message + 15'd28803;  
+			   8'd29 : pa_message = pa_message + 15'd30516;  
+			   8'd30 : pa_message = pa_message + 15'd32331;  
+			   8'd31 : pa_message = pa_message + 16'd34253;  
+			   8'd32 : pa_message = pa_message + 16'd36290;  
+			   8'd33 : pa_message = pa_message + 16'd38448;  
+			   8'd34 : pa_message = pa_message + 16'd40734;  
+			   8'd35 : pa_message = pa_message + 16'd43156;  
+			   8'd36 : pa_message = pa_message + 16'd45722;  
+			   8'd37 : pa_message = pa_message + 16'd48441;  
+			   8'd38 : pa_message = pa_message + 16'd51322;  
+			   8'd39 : pa_message = pa_message + 16'd54373;  
+			   8'd40 : pa_message = pa_message + 16'd57607;  
+			   8'd41 : pa_message = pa_message + 16'd61032;  
+			   8'd42 : pa_message = pa_message + 16'd64661;  
+			   8'd43 : pa_message = pa_message + 17'd68506;  
+			   8'd44 : pa_message = pa_message + 17'd72580;  
+			   8'd45 : pa_message = pa_message + 17'd76890;  
+			   8'd46 : pa_message = pa_message + 17'd81468;  
+			   8'd47 : pa_message = pa_message + 17'd86312;  
+			   8'd48 : pa_message = pa_message + 17'd91445;  
+			   8'd49 : pa_message = pa_message + 17'd96882;  
+			   8'd50 : pa_message = pa_message + 17'd102643; 
+			   8'd51 : pa_message = pa_message + 17'd108747; 
+			   8'd52 : pa_message = pa_message + 17'd115123; 
+			   8'd53 : pa_message = pa_message + 17'd122064; 
+			   8'd54 : pa_message = pa_message + 17'd129322; 
+			   8'd55 : pa_message = pa_message + 18'd137012; 
+			   8'd56 : pa_message = pa_message + 18'd145160; 
+			   8'd57 : pa_message = pa_message + 18'd153791; 
+			   8'd58 : pa_message = pa_message + 18'd162936; 
+			   8'd59 : pa_message = pa_message + 18'd172625; 
+			   8'd60 : pa_message = pa_message + 18'd182890; 
+			   8'd61 : pa_message = pa_message + 18'd193765; 
+			   8'd62 : pa_message = pa_message + 18'd205287; 
+			   8'd63 : pa_message = pa_message + 18'd217494; 
+			   8'd64 : pa_message = pa_message + 18'd230426; 
+			   8'd65 : pa_message = pa_message + 18'd244128; 
+			   8'd66 : pa_message = pa_message + 18'd258645; 
+			   8'd67 : pa_message = pa_message + 19'd274025; 
+			   8'd68 : pa_message = pa_message + 19'd290319; 
+			   8'd69 : pa_message = pa_message + 19'd307582; 
+			   8'd70 : pa_message = pa_message + 19'd325872; 
+			   8'd71 : pa_message = pa_message + 19'd345249; 
+			   8'd72 : pa_message = pa_message + 19'd365779; 
+			   8'd73 : pa_message = pa_message + 19'd387529; 
+			   8'd74 : pa_message = pa_message + 19'd410573; 
+			   8'd75 : pa_message = pa_message + 19'd434987; 
+			   8'd76 : pa_message = pa_message + 19'd460853; 
+			   8'd77 : pa_message = pa_message + 19'd488256; 
+			   8'd78 : pa_message = pa_message + 19'd517290; 
+			   8'd79 : pa_message = pa_message + 20'd548049; 
+			   8'd80 : pa_message = pa_message + 20'd580638; 
+			   8'd81 : pa_message = pa_message + 20'd615165; 
+			   8'd82 : pa_message = pa_message + 20'd651744; 
+			   8'd83 : pa_message = pa_message + 20'd690499; 
+			   8'd84 : pa_message = pa_message + 20'd731558; 
+			   8'd85 : pa_message = pa_message + 20'd775059; 
+			   8'd86 : pa_message = pa_message + 20'd821146; 
+			   8'd87 : pa_message = pa_message + 20'd869974; 
+			   8'd88 : pa_message = pa_message + 20'd921705; 
+			   8'd89 : pa_message = pa_message + 20'd976513; 
+			   8'd90 : pa_message = pa_message + 20'd1034579;
+			   8'd91 : pa_message = pa_message + 21'd1096099;
+			   8'd92 : pa_message = pa_message + 21'd1161276;
+			   8'd93 : pa_message = pa_message + 21'd1230329;
+			   8'd94 : pa_message = pa_message + 21'd1303488;
+			   8'd95 : pa_message = pa_message + 21'd1380998;
+			   8'd96 : pa_message = pa_message + 21'd1463116;
+			   default: pa_message = 24'b0000000000000000000000;
+			endcase
+			end
+			else pa_message = 24'b0000000000000000000000;
+       end
+	endmodule
+	
